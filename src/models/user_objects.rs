@@ -15,3 +15,9 @@ pub struct User {
 pub struct UserCreateRequest {
     pub username: String
 }
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]
+pub struct FriendRequest {
+    pub user_id: Uuid,
+    pub friend_id: Uuid,
+}

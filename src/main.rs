@@ -11,8 +11,9 @@ use configs::{configurations};
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use sqlx::{Pool, Postgres};
 use config::Config;
+use uuid::Uuid;
 use crate::models::error_message::DevMessage;
-use crate::models::user::{UserCreateRequest,User};
+use crate::models::user_objects::{UserCreateRequest, User, FriendRequest};
 use crate::service::user_service;
 
 
@@ -28,9 +29,11 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(config.clone()))
             .service(health)
-            .service(echo)
-            .service(json)
+            .service(get_first_ten_users)
+            .service(get_users)
             .service(create_user)
+            .service(send_friend_request)
+            .service(run_tests)
 
     })
     .bind("127.0.0.1:6083")?
@@ -45,16 +48,16 @@ async fn health() -> impl Responder {
     HttpResponse::Ok().body("Server is up and running")
 }
 
-
-#[post("/echo")]
-async fn echo(req_body: String, pool: web::Data<Pool<Postgres>>, configs: web::Data<Config>) -> impl Responder {
-    return HttpResponse::Ok().body(req_body)
+#[get("/users/get_first_ten_users")]
+async fn get_first_ten_users(pool: web::Data<Pool<Postgres>>) -> impl Responder {
+    let users = user_service::get_first_ten_users(pool.into_inner()).await.unwrap();
+    HttpResponse::Ok().json(users)
 }
 
 
-#[post("/json")]
-async fn json(pool: web::Data<Pool<Postgres>>, user: web::Json<User>) -> impl Responder {
-    let users = user_service::get_users(pool.into_inner()).await.unwrap();
+#[post("/users/get_users")]
+async fn get_users(pool: web::Data<Pool<Postgres>>, user_ids: web::Json<Vec<Uuid>>) -> impl Responder {
+    let users = user_service::get_specific_users(pool.into_inner(), &user_ids.into_inner()).await.unwrap();
 
     HttpResponse::Ok().json(users)
 }
@@ -64,4 +67,18 @@ async fn create_user(pool: web::Data<Pool<Postgres>>, user: web::Json<UserCreate
     let response = user_service::create_user(pool.into_inner(), &user.into_inner()).await;
 
     return response;
+}
+
+#[post("/users/send_friend_request")]
+async fn send_friend_request(pool: web::Data<Pool<Postgres>>, user: web::Json<FriendRequest>) -> impl Responder {
+    let response = user_service::send_friend_request(pool.into_inner(), &user.into_inner()).await;
+
+    return response;
+}
+
+#[get("/users/run_tests")]
+async fn run_tests(pool: web::Data<Pool<Postgres>>) -> impl Responder {
+    user_service::run_tests(pool.into_inner()).await;
+
+    return HttpResponse::Ok();
 }
