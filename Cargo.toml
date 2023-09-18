@@ -11,6 +11,7 @@ actix-web = "4.4.0"
 serde = { version = "1.0.188", fatures = ["derive"] }
 serde_json = "1.0.107"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "postgres" ] }
-dotenv = "0.15.0"
 config = {version = "0.13.1", features = ["yaml"]}
 lazy_static = "1.4.0"
+macro_rules_attribute = "0.2.0"
+anyhow = "1.0.75"
