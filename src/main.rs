@@ -1,20 +1,18 @@
 #[macro_use]
 extern crate macro_rules_attribute;
 
-mod structs;
 mod configs;
 mod repository;
 mod service;
+mod models;
 
 use configs::{configurations};
 
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use sqlx::{Pool, Postgres};
-use crate::structs::User;
-use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
-
-use std::env;
 use config::Config;
+use crate::models::error_message::DevMessage;
+use crate::models::user::{UserCreateRequest,User};
 use crate::service::user_service;
 
 
@@ -32,6 +30,7 @@ async fn main() -> std::io::Result<()> {
             .service(health)
             .service(echo)
             .service(json)
+            .service(create_user)
 
     })
     .bind("127.0.0.1:6083")?
@@ -57,8 +56,12 @@ async fn echo(req_body: String, pool: web::Data<Pool<Postgres>>, configs: web::D
 async fn json(pool: web::Data<Pool<Postgres>>, user: web::Json<User>) -> impl Responder {
     let users = user_service::get_users(pool.into_inner()).await.unwrap();
 
-    println!("{:?}", users);
-
-
     HttpResponse::Ok().json(users)
+}
+
+#[post("/users/create_user")]
+async fn create_user(pool: web::Data<Pool<Postgres>>, user: web::Json<UserCreateRequest>) -> impl Responder {
+    let response = user_service::create_user(pool.into_inner(), &user.into_inner()).await;
+
+    return response;
 }
