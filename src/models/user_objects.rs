@@ -21,3 +21,10 @@ pub struct FriendRequest {
     pub user_id: Uuid,
     pub friend_id: Uuid,
 }
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]
+pub struct FriendRequestAction {
+    pub user_id: Uuid,
+    pub friend_id: Uuid,
+    pub accepted_request: bool,
+}

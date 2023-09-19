@@ -1,10 +1,10 @@
 use std::sync::Arc;
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, Transaction};
 use anyhow::Result;
 use sqlx::database::HasValueRef;
 use sqlx::error::BoxDynError;
 use sqlx::types::Uuid;
-use crate::models::user_objects::{FriendRequest, User, UserCreateRequest};
+use crate::models::user_objects::{FriendRequest, FriendRequestAction, User, UserCreateRequest};
 
 pub async fn get_first_ten_users(pool: Arc<Pool<Postgres>>) -> Result<Vec<User>> {
     let values: Vec<User> = sqlx::query_as("SELECT * FROM USERS fetch first 10 rows only;")
@@ -21,6 +21,32 @@ pub async fn get_specific_users(pool: Arc<Pool<Postgres>>, user_ids: &Vec<Uuid>)
         .await?;
 
     return Ok(values);
+}
+
+pub async fn delete_friend_request(txn: &mut Transaction<'_, Postgres>, friend_request_action: &FriendRequestAction) -> Result<()>  {
+    sqlx::query("DELETE FROM friend_requests where user_id = $1 and friend_id = $2;")
+        .bind(friend_request_action.friend_id) // Purposefully flipped
+        .bind(friend_request_action.user_id)
+        .execute(&mut **txn)
+        .await?;
+
+    return Ok(());
+}
+
+pub async fn add_friend(txn: &mut Transaction<'_, Postgres>, friend_request_action: &FriendRequestAction) -> Result<()>  {
+    sqlx::query("insert into friends(user_id, friend_id) values ($1, $2);")
+        .bind(friend_request_action.friend_id)
+        .bind(friend_request_action.user_id)
+        .execute(&mut **txn)
+        .await?;
+
+    sqlx::query("insert into friends(user_id, friend_id) values ($1, $2);")
+        .bind(friend_request_action.user_id)
+        .bind(friend_request_action.friend_id)
+        .execute(&mut **txn)
+        .await?;
+
+    return Ok(());
 }
 
 pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> Result<Uuid> {
@@ -66,4 +92,30 @@ pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &Fri
         .await?;
 
     return Ok(());
+}
+
+pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &Uuid) -> Result<Vec<Uuid>> {
+
+    let incoming_friend_requests: Vec<Uuid> = sqlx::query_scalar(
+        "
+        select user_id from friend_requests where friend_id = $1
+        ")
+        .bind(user_id)
+        .fetch_all(&*pool)
+        .await?;
+
+    return Ok(incoming_friend_requests);
+}
+
+pub async fn get_outgoing_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &Uuid) -> Result<Vec<Uuid>> {
+
+    let outgoing_friend_requests: Vec<Uuid> = sqlx::query_scalar(
+        "
+        select friend_id from friend_requests where user_id = $1
+        ")
+        .bind(user_id)
+        .fetch_all(&*pool)
+        .await?;
+
+    return Ok(outgoing_friend_requests);
 }

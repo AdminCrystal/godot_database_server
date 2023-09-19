@@ -13,7 +13,7 @@ use sqlx::{Pool, Postgres};
 use config::Config;
 use uuid::Uuid;
 use crate::models::error_message::DevMessage;
-use crate::models::user_objects::{UserCreateRequest, User, FriendRequest};
+use crate::models::user_objects::{UserCreateRequest, User, FriendRequest, FriendRequestAction};
 use crate::service::user_service;
 
 
@@ -34,6 +34,7 @@ async fn main() -> std::io::Result<()> {
             .service(create_user)
             .service(send_friend_request)
             .service(run_tests)
+            .service(friend_request_action)
 
     })
     .bind("127.0.0.1:6083")?
@@ -42,7 +43,12 @@ async fn main() -> std::io::Result<()> {
 
 }
 
+#[post("/users/friend_request_action")]
+async fn friend_request_action(pool: web::Data<Pool<Postgres>>, friend_request_action: web::Json<FriendRequestAction>) -> impl Responder {
+    let users = user_service::friend_request_action(pool.into_inner(), &friend_request_action.into_inner()).await.unwrap();
 
+    HttpResponse::Ok().json(users)
+}
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("Server is up and running")
