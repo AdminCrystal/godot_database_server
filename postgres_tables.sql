@@ -20,15 +20,26 @@ create table if not exists friends (
 
 );
 
-create table if not exists friend_requests (
+create table if not exists outgoing_friend_requests (
 	user_id uuid not null,
 	friend_id uuid not null,
 	friend_request_ts timestamptz default current_timestamp,
 	
 	foreign key (user_id) references users(user_id) on delete cascade,
 	foreign key (friend_id) references users(user_id) on delete cascade,
-	CONSTRAINT unique_friend_requests PRIMARY KEY (user_id, friend_id)
+	CONSTRAINT unique_outgoing_friend_requests PRIMARY KEY (user_id, friend_id)
 );
+
+create table if not exists incoming_friend_requests (
+	user_id uuid not null,
+	friend_id uuid not null,
+	friend_request_ts timestamptz default current_timestamp,
+	
+	foreign key (user_id) references users(user_id) on delete cascade,
+	foreign key (friend_id) references users(user_id) on delete cascade,
+	CONSTRAINT unique_incoming_friend_requests PRIMARY KEY (user_id, friend_id)
+);
+
 
 create table if not exists blocked_users (
 	user_id uuid not null,

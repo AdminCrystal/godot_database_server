@@ -110,21 +110,21 @@ pub async fn run_tests(pool: Arc<Pool<Postgres>>) {
     };
 
     let friend_request2 = FriendRequest {
-        user_id: id3.clone(),
-        friend_id: id2.clone(),
+        user_id: id1.clone(),
+        friend_id: id3.clone(),
     };
-    user_repository::send_friend_request(pool.clone(), &friend_request1).await.expect("Unable to send first friend request");
-    user_repository::send_friend_request(pool.clone(), &friend_request2).await.expect("Unable to send second friend request");
-    user_repository::send_friend_request(pool.clone(), &friend_request1).await.expect_err("Created duplicate friend request");
+    send_friend_request(pool.clone(), &friend_request1).await;
+    send_friend_request(pool.clone(), &friend_request2).await;
+    send_friend_request(pool.clone(), &friend_request1).await;
 
     let outgoing1 = user_repository::get_outgoing_friend_requests(pool.clone(), &id1).await.expect("Unable to get outgoing friend requests");
-    let outgoing2 = user_repository::get_outgoing_friend_requests(pool.clone(), &id3).await.expect("Unable to get outgoing friend requests");
+    let outgoing2 = user_repository::get_outgoing_friend_requests(pool.clone(), &id2).await.expect("Unable to get outgoing friend requests");
 
     let incoming = user_repository::get_incoming_friend_requests(pool.clone(), &id2).await.expect("Unable to get incoming friend requests");
 
-    assert_eq!(1, outgoing1.len());
-    assert_eq!(1, outgoing2.len());
-    assert_eq!(2, incoming.len());
+    assert_eq!(2, outgoing1.len());
+    assert_eq!(0, outgoing2.len());
+    assert_eq!(1, incoming.len());
 
     let friend_request_accept = FriendRequestAction {
         user_id: id2.clone(),
@@ -133,8 +133,8 @@ pub async fn run_tests(pool: Arc<Pool<Postgres>>) {
     };
 
     let friend_request_reject = FriendRequestAction {
-        user_id: id2.clone(),
-        friend_id: id3.clone(),
+        user_id: id3.clone(),
+        friend_id: id1.clone(),
         accepted_request: false,
     };
 

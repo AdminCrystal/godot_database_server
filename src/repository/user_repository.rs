@@ -24,7 +24,13 @@ pub async fn get_specific_users(pool: Arc<Pool<Postgres>>, user_ids: &Vec<Uuid>)
 }
 
 pub async fn delete_friend_request(txn: &mut Transaction<'_, Postgres>, friend_request_action: &FriendRequestAction) -> Result<()>  {
-    sqlx::query("DELETE FROM friend_requests where user_id = $1 and friend_id = $2;")
+    sqlx::query("DELETE FROM incoming_friend_requests where user_id = $1 and friend_id = $2;")
+        .bind(friend_request_action.user_id)
+        .bind(friend_request_action.friend_id)
+        .execute(&mut **txn)
+        .await?;
+
+    sqlx::query("DELETE FROM outgoing_friend_requests where user_id = $1 and friend_id = $2;")
         .bind(friend_request_action.friend_id) // Purposefully flipped
         .bind(friend_request_action.user_id)
         .execute(&mut **txn)
@@ -83,11 +89,21 @@ pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &Fri
 
     sqlx::query(
         "
-        insert into friend_requests(user_id, friend_id)
+        insert into outgoing_friend_requests(user_id, friend_id)
         values ($1, $2);
         ")
         .bind(&friend_request.user_id)
         .bind(&friend_request.friend_id)
+        .execute(&*pool)
+        .await?;
+
+    sqlx::query(
+        "
+        insert into incoming_friend_requests(user_id, friend_id)
+        values ($1, $2);
+        ")
+        .bind(&friend_request.friend_id) // purposefully flipped
+        .bind(&friend_request.user_id)
         .execute(&*pool)
         .await?;
 
@@ -98,7 +114,7 @@ pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &U
 
     let incoming_friend_requests: Vec<Uuid> = sqlx::query_scalar(
         "
-        select user_id from friend_requests where friend_id = $1
+        select friend_id from incoming_friend_requests where user_id = $1
         ")
         .bind(user_id)
         .fetch_all(&*pool)
@@ -111,7 +127,7 @@ pub async fn get_outgoing_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &U
 
     let outgoing_friend_requests: Vec<Uuid> = sqlx::query_scalar(
         "
-        select friend_id from friend_requests where user_id = $1
+        select friend_id from outgoing_friend_requests where user_id = $1
         ")
         .bind(user_id)
         .fetch_all(&*pool)
