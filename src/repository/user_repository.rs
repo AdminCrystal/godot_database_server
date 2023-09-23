@@ -55,7 +55,7 @@ pub async fn add_friend(txn: &mut Transaction<'_, Postgres>, friend_request_acti
     return Ok(());
 }
 
-pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> Result<Uuid> {
+pub async fn create_user(txn: &mut Transaction<'_, Postgres>, new_user: &UserCreateRequest) -> Result<Uuid> {
 
     let uuid = Uuid::new_v4();
     sqlx::query(
@@ -66,26 +66,26 @@ pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest
         .bind(&uuid)
         .bind(&new_user.username)
         .bind(&new_user.username.to_lowercase())
-        .execute(&*pool)
+        .execute(&mut **txn)
         .await?;
 
     return Ok(uuid);
 }
 
-pub async fn delete_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> Result<()> {
+pub async fn delete_user(txn: &mut Transaction<'_, Postgres>, new_user: &UserCreateRequest) -> Result<()> {
     sqlx::query(
         "
         delete from users
         where username_distinct = $1;
         ")
         .bind(&new_user.username.to_lowercase())
-        .execute(&*pool)
+        .execute(&mut **txn)
         .await?;
 
     return Ok(());
 }
 
-pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &FriendRequest) -> Result<()> {
+pub async fn send_friend_request(txn: &mut Transaction<'_, Postgres>, friend_request: &FriendRequest) -> Result<()> {
 
     sqlx::query(
         "
@@ -94,7 +94,7 @@ pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &Fri
         ")
         .bind(&friend_request.user_id)
         .bind(&friend_request.friend_id)
-        .execute(&*pool)
+        .execute(&mut **txn)
         .await?;
 
     sqlx::query(
@@ -104,7 +104,7 @@ pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &Fri
         ")
         .bind(&friend_request.friend_id) // purposefully flipped
         .bind(&friend_request.user_id)
-        .execute(&*pool)
+        .execute(&mut **txn)
         .await?;
 
     return Ok(());

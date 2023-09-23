@@ -12,9 +12,10 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use sqlx::{Pool, Postgres};
 use config::Config;
 use uuid::Uuid;
+use crate::models::game_structs::{CreateGameRequest, JoinGameRequest};
 use crate::models::error_message::DevMessage;
 use crate::models::user_objects::{UserCreateRequest, User, FriendRequest, FriendRequestAction};
-use crate::service::user_service;
+use crate::service::{game_service, user_service};
 
 
 #[actix_web::main]
@@ -35,6 +36,8 @@ async fn main() -> std::io::Result<()> {
             .service(send_friend_request)
             .service(run_tests)
             .service(friend_request_action)
+            .service(create_game)
+            .service(join_game)
 
     })
     .bind("127.0.0.1:6083")?
@@ -70,14 +73,14 @@ async fn get_users(pool: web::Data<Pool<Postgres>>, user_ids: web::Json<Vec<Uuid
 
 #[post("/users/create_user")]
 async fn create_user(pool: web::Data<Pool<Postgres>>, user: web::Json<UserCreateRequest>) -> impl Responder {
-    let response = user_service::create_user(pool.into_inner(), &user.into_inner()).await;
+    let response = user_service::create_user(pool.into_inner(), &user.into_inner()).await.unwrap();
 
     return response;
 }
 
 #[post("/users/send_friend_request")]
 async fn send_friend_request(pool: web::Data<Pool<Postgres>>, user: web::Json<FriendRequest>) -> impl Responder {
-    let response = user_service::send_friend_request(pool.into_inner(), &user.into_inner()).await;
+    let response = user_service::send_friend_request(pool.into_inner(), &user.into_inner()).await.unwrap();
 
     return response;
 }
@@ -87,4 +90,18 @@ async fn run_tests(pool: web::Data<Pool<Postgres>>) -> impl Responder {
     user_service::run_tests(pool.into_inner()).await;
 
     return HttpResponse::Ok();
+}
+
+#[post("/games/create_game")]
+async fn create_game(pool: web::Data<Pool<Postgres>>, create_game_request: web::Json<CreateGameRequest>) -> impl Responder {
+    let response = game_service::create_game(pool.into_inner(), &create_game_request.into_inner()).await.unwrap();
+
+    return response;
+}
+
+#[post("/games/join_game")]
+async fn join_game(pool: web::Data<Pool<Postgres>>, join_game_request: web::Json<JoinGameRequest>) -> impl Responder {
+    let response = game_service::join_game(pool.into_inner(), &join_game_request.into_inner()).await.unwrap();
+
+    return response;
 }

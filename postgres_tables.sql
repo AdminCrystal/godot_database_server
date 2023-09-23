@@ -52,3 +52,27 @@ create table if not exists blocked_users (
 
 );
 
+create table if not exists games (
+	game_id uuid primary key not null,
+	created_ts timestamptz default current_timestamp,
+	create_user_id uuid not null,
+	game_ip cidr not null,
+	is_active bool not null,
+	game_name varchar(25) not null,
+	
+	foreign key (create_user_id) references users(user_id) on delete cascade
+
+);
+create index if not exists users_created_games on games(create_user_id);
+
+create table if not exists game_participants (
+	game_id uuid not null,
+	join_ts timestamptz default current_timestamp,
+	user_id uuid not null,
+	user_ip cidr not null,
+
+	foreign key (game_id) references games(game_id) on delete cascade,
+	foreign key (user_id) references users(user_id) on delete cascade,
+	CONSTRAINT games_participating_in PRIMARY KEY (game_id, user_id)
+
+);

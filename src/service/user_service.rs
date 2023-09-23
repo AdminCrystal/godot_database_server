@@ -4,6 +4,7 @@ use sqlx::{Pool, Postgres};
 
 use crate::repository::user_repository;
 use anyhow::Result;
+use sqlx::postgres::any::AnyConnectionBackend;
 use uuid::Uuid;
 use crate::models::error_message::DevMessage;
 use crate::models::user_objects::{FriendRequest, FriendRequestAction, User, UserCreateRequest};
@@ -36,8 +37,11 @@ pub async fn get_first_ten_users(pool: Arc<Pool<Postgres>>) -> Result<Vec<User>>
     return Ok(users);
 }
 
-pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> impl Responder {
-    let user = user_repository::create_user(pool, new_user).await;
+pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> Result<impl Responder> {
+    let mut txn = pool.begin().await?;
+    let user = user_repository::create_user(&mut txn, new_user).await;
+
+    txn.commit().await?;
 
     match user {
         Ok(_) => {
@@ -45,20 +49,22 @@ pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest
                 message: "User created successfully".to_string()
             };
 
-            HttpResponse::Ok().json(dev_message)
+            return Ok(HttpResponse::Ok().json(dev_message));
         },
         Err(_) => {
             let dev_message = DevMessage {
                 message: "User already exists".to_string()
             };
 
-            return HttpResponse::BadRequest().json(dev_message);
+            return Ok(HttpResponse::BadRequest().json(dev_message));
         }
     }
 }
 
-pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &FriendRequest) -> impl Responder {
-    let user = user_repository::send_friend_request(pool, friend_request).await;
+pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &FriendRequest) -> Result<impl Responder> {
+    let mut txn = pool.begin().await?;
+    let user = user_repository::send_friend_request(&mut txn, friend_request).await;
+    txn.commit().await?;
 
     match user {
         Ok(_) => {
@@ -66,14 +72,14 @@ pub async fn send_friend_request(pool: Arc<Pool<Postgres>>, friend_request: &Fri
                 message: "Friend request created successfully".to_string()
             };
 
-            HttpResponse::Ok().json(dev_message)
+            return Ok(HttpResponse::Ok().json(dev_message));
         },
         Err(_) => {
             let dev_message = DevMessage {
                 message: "Already have a friend request sent out to that user".to_string()
             };
 
-            return HttpResponse::BadRequest().json(dev_message);
+            return Ok(HttpResponse::BadRequest().json(dev_message));
         }
     }
 }
@@ -91,13 +97,17 @@ pub async fn run_tests(pool: Arc<Pool<Postgres>>) {
         username: "Hannah".to_string(),
     };
 
-    user_repository::delete_user(pool.clone(), &user1).await.expect("Failed to delete from users table");
-    user_repository::delete_user(pool.clone(), &user2).await.expect("Failed to delete from users table");
-    user_repository::delete_user(pool.clone(), &user3).await.expect("Failed to delete from users table");
+    let mut txn = pool.begin().await.unwrap();
 
-    let id1 = user_repository::create_user(pool.clone(), &user1).await.expect("Failed to add users1 to users table");
-    let id2 = user_repository::create_user(pool.clone(), &user2).await.expect("Failed to add users2 to users table");
-    let id3 = user_repository::create_user(pool.clone(), &user3).await.expect("Failed to add users3 to users table");
+    user_repository::delete_user(&mut txn, &user1).await.expect("Failed to delete from users table");
+    user_repository::delete_user(&mut txn, &user2).await.expect("Failed to delete from users table");
+    user_repository::delete_user(&mut txn, &user3).await.expect("Failed to delete from users table");
+
+    let id1 = user_repository::create_user(&mut txn, &user1).await.expect("Failed to add users1 to users table");
+    let id2 = user_repository::create_user(&mut txn, &user2).await.expect("Failed to add users2 to users table");
+    let id3 = user_repository::create_user(&mut txn, &user3).await.expect("Failed to add users3 to users table");
+
+    txn.commit().await.unwrap();
 
     let id_vec = vec![id1, id2, id3];
     let users = user_repository::get_specific_users(pool.clone(), &id_vec).await.unwrap();
@@ -113,9 +123,9 @@ pub async fn run_tests(pool: Arc<Pool<Postgres>>) {
         user_id: id1.clone(),
         friend_id: id3.clone(),
     };
-    send_friend_request(pool.clone(), &friend_request1).await;
-    send_friend_request(pool.clone(), &friend_request2).await;
-    send_friend_request(pool.clone(), &friend_request1).await;
+    send_friend_request(pool.clone(), &friend_request1).await.unwrap();
+    send_friend_request(pool.clone(), &friend_request2).await.unwrap();
+    send_friend_request(pool.clone(), &friend_request1).await.unwrap();
 
     let outgoing1 = user_repository::get_outgoing_friend_requests(pool.clone(), &id1).await.expect("Unable to get outgoing friend requests");
     let outgoing2 = user_repository::get_outgoing_friend_requests(pool.clone(), &id2).await.expect("Unable to get outgoing friend requests");
