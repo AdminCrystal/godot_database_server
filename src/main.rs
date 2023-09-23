@@ -12,9 +12,9 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use sqlx::{Pool, Postgres};
 use config::Config;
 use uuid::Uuid;
-use crate::models::game_structs::{CreateGameRequest, JoinGameRequest};
+use crate::models::game_structs::{CreateGameRequest, JoinGameRequest, PublicGameRequest};
 use crate::models::error_message::DevMessage;
-use crate::models::user_objects::{UserCreateRequest, User, FriendRequest, FriendRequestAction};
+use crate::models::user_structs::{UserCreateRequest, User, FriendRequest, FriendRequestAction};
 use crate::service::{game_service, user_service};
 
 
@@ -38,6 +38,7 @@ async fn main() -> std::io::Result<()> {
             .service(friend_request_action)
             .service(create_game)
             .service(join_game)
+            .service(get_public_games)
 
     })
     .bind("127.0.0.1:6083")?
@@ -102,6 +103,13 @@ async fn create_game(pool: web::Data<Pool<Postgres>>, create_game_request: web::
 #[post("/games/join_game")]
 async fn join_game(pool: web::Data<Pool<Postgres>>, join_game_request: web::Json<JoinGameRequest>) -> impl Responder {
     let response = game_service::join_game(pool.into_inner(), &join_game_request.into_inner()).await.unwrap();
+
+    return response;
+}
+
+#[post("/games/get_active_games")]
+async fn get_public_games(pool: web::Data<Pool<Postgres>>) -> impl Responder {
+    let response = game_service::get_public_games(pool.into_inner()).await.unwrap();
 
     return response;
 }

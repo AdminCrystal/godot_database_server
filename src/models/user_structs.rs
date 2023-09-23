@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use sqlx::types::chrono;
-use sqlx::types::chrono::{DateTime, TimeZone, Utc };
+use sqlx::types::chrono::{DateTime, Utc };
 use uuid::Uuid;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]

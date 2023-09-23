@@ -4,7 +4,7 @@ use anyhow::Result;
 use sqlx::database::HasValueRef;
 use sqlx::error::BoxDynError;
 use sqlx::types::Uuid;
-use crate::models::user_objects::{FriendRequest, FriendRequestAction, User, UserCreateRequest};
+use crate::models::user_structs::{FriendRequest, FriendRequestAction, User, UserCreateRequest};
 
 pub async fn get_first_ten_users(pool: Arc<Pool<Postgres>>) -> Result<Vec<User>> {
     let values: Vec<User> = sqlx::query_as("SELECT * FROM USERS fetch first 10 rows only;")

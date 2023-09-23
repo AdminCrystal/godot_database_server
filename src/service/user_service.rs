@@ -7,7 +7,7 @@ use anyhow::Result;
 use sqlx::postgres::any::AnyConnectionBackend;
 use uuid::Uuid;
 use crate::models::error_message::DevMessage;
-use crate::models::user_objects::{FriendRequest, FriendRequestAction, User, UserCreateRequest};
+use crate::models::user_structs::{FriendRequest, FriendRequestAction, User, UserCreateRequest};
 
 
 pub async fn get_specific_users(pool: Arc<Pool<Postgres>>, user_ids: &Vec<Uuid>) -> Result<Vec<User>> {
