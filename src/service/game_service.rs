@@ -11,6 +11,8 @@ pub async fn create_game(pool: Arc<Pool<Postgres>>, create_game_request: &Create
     let mut txn = pool.begin().await?;
     let game_id = game_repository::create_game(&mut txn, create_game_request).await?;
 
+    txn.commit().await?;
+
     return Ok(HttpResponse::Ok().body(game_id.to_string()));
 }
 

@@ -13,7 +13,7 @@ pub async fn create_game(txn: &mut Transaction<'_, Postgres>, create_game_reques
     sqlx::query(
         "
         insert into games(game_id, create_user_id, game_ip, is_active, game_name, is_public)
-        values ($1, $2, $3, $4, $5);
+        values ($1, $2, $3, $4, $5, $6);
         ")
         .bind(&game_id)
         .bind(&create_game_request.create_user_id)
@@ -30,12 +30,10 @@ pub async fn create_game(txn: &mut Transaction<'_, Postgres>, create_game_reques
 pub async fn get_public_games(pool: Arc<Pool<Postgres>>) -> Result<Vec<Game>> {
     let games: Vec<Game> = sqlx::query_as(
         "
-        select game_ip, game_id, game_name, create_user_id
+        select *
         from games
         where is_public = true
         and is_active = true
-        and game_name = $1
-        and create_user_id = $2
         order by created_ts desc
         fetch first 10 rows only
         ")

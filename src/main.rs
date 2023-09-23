@@ -9,6 +9,7 @@ mod models;
 use configs::{configurations};
 
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use anyhow::__private::kind::TraitKind;
 use sqlx::{Pool, Postgres};
 use config::Config;
 use uuid::Uuid;
@@ -107,9 +108,9 @@ async fn join_game(pool: web::Data<Pool<Postgres>>, join_game_request: web::Json
     return response;
 }
 
-#[post("/games/get_active_games")]
+#[get("/games/get_active_games")]
 async fn get_public_games(pool: web::Data<Pool<Postgres>>) -> impl Responder {
-    let response = game_service::get_public_games(pool.into_inner()).await.unwrap();
+    let response = game_service::get_public_games(pool.into_inner()).await;
 
-    return response;
+    return response.unwrap();
 }

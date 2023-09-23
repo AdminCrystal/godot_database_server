@@ -23,9 +23,9 @@ pub struct Game {
     pub game_id: Uuid,
     pub create_user_id: Uuid,
     pub game_ip: IpAddr,
-    pub game_name: Option<String>,
-    pub is_public: Option<bool>,
-    pub created_ts: Option<DateTime<Utc>>
+    pub game_name: String,
+    pub is_public: bool,
+    pub created_ts: DateTime<Utc>
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]

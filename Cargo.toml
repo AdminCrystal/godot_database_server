@@ -15,7 +15,7 @@ chrono = { version = "0.4.31", features = ["serde"]}
 config = {version = "0.13.1", features = ["yaml"]}
 lazy_static = "1.4.0"
 macro_rules_attribute = "0.2.0"
-anyhow = "1.0.75"
+anyhow = {version = "1.0.75", features = ["backtrace"]}
 
 [dependencies.uuid]
 version = "1.4.1"
