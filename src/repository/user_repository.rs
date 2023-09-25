@@ -14,6 +14,15 @@ pub async fn get_first_ten_users(pool: Arc<Pool<Postgres>>) -> Result<Vec<User>>
     return Ok(values);
 }
 
+pub async fn get_user_id_from_username(pool: Arc<Pool<Postgres>>, user_create_request: &UserCreateRequest) -> Result<Option<Uuid>> {
+    let user_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM USERS where username_distinct = $1;")
+        .bind(&user_create_request.username.to_lowercase())
+        .fetch_optional(&*pool)
+        .await?;
+
+    return Ok(user_id);
+}
+
 pub async fn get_specific_users(pool: Arc<Pool<Postgres>>, user_ids: &Vec<Uuid>) -> Result<Vec<User>> {
     let values: Vec<User> = sqlx::query_as("SELECT * FROM USERS where user_id = ANY ($1);")
         .bind(user_ids)
@@ -56,6 +65,7 @@ pub async fn add_friend(txn: &mut Transaction<'_, Postgres>, friend_request_acti
 }
 
 pub async fn create_user(txn: &mut Transaction<'_, Postgres>, new_user: &UserCreateRequest) -> Result<Uuid> {
+
 
     let uuid = Uuid::new_v4();
     sqlx::query(
@@ -110,11 +120,11 @@ pub async fn send_friend_request(txn: &mut Transaction<'_, Postgres>, friend_req
     return Ok(());
 }
 
-pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &Uuid) -> Result<Vec<Uuid>> {
+pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &Uuid) -> Result<Vec<User>> {
 
-    let incoming_friend_requests: Vec<Uuid> = sqlx::query_scalar(
+    let incoming_friend_requests: Vec<User> = sqlx::query_as(
         "
-        select friend_id from incoming_friend_requests where user_id = $1
+        select friend_id, u.username from incoming_friend_requests ifr join users u on u.user_id = f.friend_id where user_id = $1
         ")
         .bind(user_id)
         .fetch_all(&*pool)

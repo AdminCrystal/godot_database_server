@@ -7,7 +7,7 @@ use anyhow::Result;
 use sqlx::postgres::any::AnyConnectionBackend;
 use uuid::Uuid;
 use crate::models::error_message::DevMessage;
-use crate::models::user_structs::{FriendRequest, FriendRequestAction, User, UserCreateRequest};
+use crate::models::user_structs::{BaseUser, FriendRequest, FriendRequestAction, User, UserCreateRequest};
 
 
 pub async fn get_specific_users(pool: Arc<Pool<Postgres>>, user_ids: &Vec<Uuid>) -> Result<Vec<User>> {
@@ -37,26 +37,65 @@ pub async fn get_first_ten_users(pool: Arc<Pool<Postgres>>) -> Result<Vec<User>>
     return Ok(users);
 }
 
+pub async fn get_user_id_from_username(pool: Arc<Pool<Postgres>>, user: &UserCreateRequest) -> Result<Option<BaseUser>> {
+    let user_id = user_repository::get_user_id_from_username(pool, user).await?;
+
+    let base_user = user_id.map(|user_id_option| {
+        return BaseUser {
+            user_id: user_id_option,
+        }
+    });
+    return Ok(base_user);
+}
+
+pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user: &BaseUser) -> Result<Vec<User>> {
+    let user_id = user_repository::get_incoming_friend_requests(pool, &user.user_id).await?;
+
+    return Ok(user_id);
+}
+
 pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> Result<impl Responder> {
+    println!("Trying to create user: {}", new_user.username);
     let mut txn = pool.begin().await?;
     let user = user_repository::create_user(&mut txn, new_user).await;
 
     txn.commit().await?;
 
-    match user {
-        Ok(_) => {
-            let dev_message = DevMessage {
-                message: "User created successfully".to_string()
-            };
-
-            return Ok(HttpResponse::Ok().json(dev_message));
+    return match user {
+        Ok(user_id) => {
+            Ok(HttpResponse::Ok().body(user_id.to_string()))
         },
         Err(_) => {
             let dev_message = DevMessage {
                 message: "User already exists".to_string()
             };
 
-            return Ok(HttpResponse::BadRequest().json(dev_message));
+            Ok(HttpResponse::BadRequest().json(dev_message))
+        }
+    }
+}
+
+pub async fn delete_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> Result<impl Responder> {
+    println!("Trying to delete user: {}", new_user.username);
+    let mut txn = pool.begin().await?;
+    let user = user_repository::delete_user(&mut txn, new_user).await;
+
+    txn.commit().await?;
+
+    return match user {
+        Ok(_) => {
+            let dev_message = DevMessage {
+                message: "User deleted successfully".to_string()
+            };
+
+            Ok(HttpResponse::Ok().json(dev_message))
+        },
+        Err(_) => {
+            let dev_message = DevMessage {
+                message: "User already exists".to_string()
+            };
+
+            Ok(HttpResponse::BadRequest().json(dev_message))
         }
     }
 }

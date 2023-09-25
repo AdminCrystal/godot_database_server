@@ -7,8 +7,11 @@ use uuid::Uuid;
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]
 pub struct User {
     pub user_id: Uuid,
+    #[sqlx(default)]
     pub username: Option<String>,
+    #[sqlx(default)]
     pub username_distinct: Option<String>,
+    #[sqlx(default)]
     pub user_create_ts: Option<DateTime<Utc>>
 }
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]
@@ -20,6 +23,11 @@ pub struct UserCreateRequest {
 pub struct FriendRequest {
     pub user_id: Uuid,
     pub friend_id: Uuid,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]
+pub struct BaseUser {
+    pub user_id: Uuid,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]

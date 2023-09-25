@@ -15,7 +15,7 @@ use config::Config;
 use uuid::Uuid;
 use crate::models::game_structs::{CreateGameRequest, JoinGameRequest, PublicGameRequest};
 use crate::models::error_message::DevMessage;
-use crate::models::user_structs::{UserCreateRequest, User, FriendRequest, FriendRequestAction};
+use crate::models::user_structs::{UserCreateRequest, User, FriendRequest, FriendRequestAction, BaseUser};
 use crate::service::{game_service, user_service};
 
 
@@ -40,6 +40,9 @@ async fn main() -> std::io::Result<()> {
             .service(create_game)
             .service(join_game)
             .service(get_public_games)
+            .service(delete_user)
+            .service(get_user_id_from_username)
+            .service(get_incoming_friend_requests)
 
     })
     .bind("127.0.0.1:6083")?
@@ -65,6 +68,12 @@ async fn get_first_ten_users(pool: web::Data<Pool<Postgres>>) -> impl Responder 
     HttpResponse::Ok().json(users)
 }
 
+#[post("/users/get_user_id_from_username")]
+async fn get_user_id_from_username(pool: web::Data<Pool<Postgres>>, user: web::Json<UserCreateRequest>) -> impl Responder {
+    let users = user_service::get_user_id_from_username(pool.into_inner(), &user).await;
+    HttpResponse::Ok().json(users.unwrap())
+}
+
 
 #[post("/users/get_users")]
 async fn get_users(pool: web::Data<Pool<Postgres>>, user_ids: web::Json<Vec<Uuid>>) -> impl Responder {
@@ -76,6 +85,13 @@ async fn get_users(pool: web::Data<Pool<Postgres>>, user_ids: web::Json<Vec<Uuid
 #[post("/users/create_user")]
 async fn create_user(pool: web::Data<Pool<Postgres>>, user: web::Json<UserCreateRequest>) -> impl Responder {
     let response = user_service::create_user(pool.into_inner(), &user.into_inner()).await.unwrap();
+
+    return response;
+}
+
+#[post("/users/delete_user")]
+async fn delete_user(pool: web::Data<Pool<Postgres>>, user: web::Json<UserCreateRequest>) -> impl Responder {
+    let response = user_service::delete_user(pool.into_inner(), &user.into_inner()).await.unwrap();
 
     return response;
 }
@@ -92,6 +108,13 @@ async fn run_tests(pool: web::Data<Pool<Postgres>>) -> impl Responder {
     user_service::run_tests(pool.into_inner()).await;
 
     return HttpResponse::Ok();
+}
+
+#[post("/users/get_incoming_friend_requests")]
+async fn get_incoming_friend_requests(pool: web::Data<Pool<Postgres>>, user: web::Json<BaseUser>) -> impl Responder {
+
+    let users = user_service::get_incoming_friend_requests(pool.into_inner(), &user.into_inner()).await;
+    HttpResponse::Ok().json(users.unwrap())
 }
 
 #[post("/games/create_game")]
