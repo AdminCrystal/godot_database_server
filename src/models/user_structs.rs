@@ -21,8 +21,8 @@ pub struct UserCreateRequest {
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]
 pub struct FriendRequest {
-    pub user_id: Uuid,
-    pub friend_id: Uuid,
+    pub create_user_id: Uuid,
+    pub recipient_id: Uuid,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]

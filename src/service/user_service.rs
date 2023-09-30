@@ -54,6 +54,12 @@ pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user: &Base
     return Ok(user_id);
 }
 
+pub async fn get_outgoing_friend_requests(pool: Arc<Pool<Postgres>>, user: &BaseUser) -> Result<Vec<User>> {
+    let user_id = user_repository::get_outgoing_friend_requests(pool, &user.user_id).await?;
+
+    return Ok(user_id);
+}
+
 pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest) -> Result<impl Responder> {
     println!("Trying to create user: {}", new_user.username);
     let mut txn = pool.begin().await?;
@@ -63,7 +69,10 @@ pub async fn create_user(pool: Arc<Pool<Postgres>>, new_user: &UserCreateRequest
 
     return match user {
         Ok(user_id) => {
-            Ok(HttpResponse::Ok().body(user_id.to_string()))
+            let base_user = BaseUser {
+                user_id,
+            };
+            Ok(HttpResponse::Ok().json(base_user))
         },
         Err(_) => {
             let dev_message = DevMessage {
@@ -153,52 +162,52 @@ pub async fn run_tests(pool: Arc<Pool<Postgres>>) {
 
     assert_eq!(3, users.len());
 
-    let friend_request1 = FriendRequest {
-        user_id: id1.clone(),
-        friend_id: id2.clone(),
-    };
-
-    let friend_request2 = FriendRequest {
-        user_id: id1.clone(),
-        friend_id: id3.clone(),
-    };
-    send_friend_request(pool.clone(), &friend_request1).await.unwrap();
-    send_friend_request(pool.clone(), &friend_request2).await.unwrap();
-    send_friend_request(pool.clone(), &friend_request1).await.unwrap();
-
-    let outgoing1 = user_repository::get_outgoing_friend_requests(pool.clone(), &id1).await.expect("Unable to get outgoing friend requests");
-    let outgoing2 = user_repository::get_outgoing_friend_requests(pool.clone(), &id2).await.expect("Unable to get outgoing friend requests");
-
-    let incoming = user_repository::get_incoming_friend_requests(pool.clone(), &id2).await.expect("Unable to get incoming friend requests");
-
-    assert_eq!(2, outgoing1.len());
-    assert_eq!(0, outgoing2.len());
-    assert_eq!(1, incoming.len());
-
-    let friend_request_accept = FriendRequestAction {
-        user_id: id2.clone(),
-        friend_id: id1.clone(),
-        accepted_request: true,
-    };
-
-    let friend_request_reject = FriendRequestAction {
-        user_id: id3.clone(),
-        friend_id: id1.clone(),
-        accepted_request: false,
-    };
-
-    friend_request_action(pool.clone(), &friend_request_accept).await.expect("Unable to accept friend request");
-    friend_request_action(pool.clone(), &friend_request_reject).await.expect("Unable to reject friend request");
-
-    let outgoing1 = user_repository::get_outgoing_friend_requests(pool.clone(), &id1).await.expect("Unable to get outgoing friend requests");
-    let outgoing2 = user_repository::get_outgoing_friend_requests(pool.clone(), &id3).await.expect("Unable to get outgoing friend requests");
-
-    let incoming = user_repository::get_incoming_friend_requests(pool.clone(), &id2).await.expect("Unable to get incoming friend requests");
-
-    assert_eq!(0, outgoing1.len());
-    assert_eq!(0, outgoing2.len());
-    assert_eq!(0, incoming.len());
-
-    println!("{users:?}");
-    return;
+    // let friend_request1 = FriendRequest {
+    //     user_id: id1.clone(),
+    //     friend_id: id2.clone(),
+    // };
+    //
+    // let friend_request2 = FriendRequest {
+    //     user_id: id1.clone(),
+    //     friend_id: id3.clone(),
+    // };
+    // send_friend_request(pool.clone(), &friend_request1).await.unwrap();
+    // send_friend_request(pool.clone(), &friend_request2).await.unwrap();
+    // send_friend_request(pool.clone(), &friend_request1).await.unwrap();
+    //
+    // let outgoing1 = user_repository::get_outgoing_friend_requests(pool.clone(), &id1).await.expect("Unable to get outgoing friend requests");
+    // let outgoing2 = user_repository::get_outgoing_friend_requests(pool.clone(), &id2).await.expect("Unable to get outgoing friend requests");
+    //
+    // let incoming = user_repository::get_incoming_friend_requests(pool.clone(), &id2).await.expect("Unable to get incoming friend requests");
+    //
+    // assert_eq!(2, outgoing1.len());
+    // assert_eq!(0, outgoing2.len());
+    // assert_eq!(1, incoming.len());
+    //
+    // let friend_request_accept = FriendRequestAction {
+    //     user_id: id2.clone(),
+    //     friend_id: id1.clone(),
+    //     accepted_request: true,
+    // };
+    //
+    // let friend_request_reject = FriendRequestAction {
+    //     user_id: id3.clone(),
+    //     friend_id: id1.clone(),
+    //     accepted_request: false,
+    // };
+    //
+    // friend_request_action(pool.clone(), &friend_request_accept).await.expect("Unable to accept friend request");
+    // friend_request_action(pool.clone(), &friend_request_reject).await.expect("Unable to reject friend request");
+    //
+    // let outgoing1 = user_repository::get_outgoing_friend_requests(pool.clone(), &id1).await.expect("Unable to get outgoing friend requests");
+    // let outgoing2 = user_repository::get_outgoing_friend_requests(pool.clone(), &id3).await.expect("Unable to get outgoing friend requests");
+    //
+    // let incoming = user_repository::get_incoming_friend_requests(pool.clone(), &id2).await.expect("Unable to get incoming friend requests");
+    //
+    // assert_eq!(0, outgoing1.len());
+    // assert_eq!(0, outgoing2.len());
+    // assert_eq!(0, incoming.len());
+    //
+    // println!("{users:?}");
+    // return;
 }

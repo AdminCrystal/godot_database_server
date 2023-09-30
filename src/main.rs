@@ -43,6 +43,7 @@ async fn main() -> std::io::Result<()> {
             .service(delete_user)
             .service(get_user_id_from_username)
             .service(get_incoming_friend_requests)
+            .service(get_outgoing_friend_requests)
 
     })
     .bind("127.0.0.1:6083")?
@@ -57,6 +58,7 @@ async fn friend_request_action(pool: web::Data<Pool<Postgres>>, friend_request_a
 
     HttpResponse::Ok().json(users)
 }
+
 #[get("/health")]
 async fn health() -> impl Responder {
     HttpResponse::Ok().body("Server is up and running")
@@ -114,6 +116,13 @@ async fn run_tests(pool: web::Data<Pool<Postgres>>) -> impl Responder {
 async fn get_incoming_friend_requests(pool: web::Data<Pool<Postgres>>, user: web::Json<BaseUser>) -> impl Responder {
 
     let users = user_service::get_incoming_friend_requests(pool.into_inner(), &user.into_inner()).await;
+    HttpResponse::Ok().json(users.unwrap())
+}
+
+#[post("/users/get_outgoing_friend_requests")]
+async fn get_outgoing_friend_requests(pool: web::Data<Pool<Postgres>>, user: web::Json<BaseUser>) -> impl Responder {
+
+    let users = user_service::get_outgoing_friend_requests(pool.into_inner(), &user.into_inner()).await;
     HttpResponse::Ok().json(users.unwrap())
 }
 
