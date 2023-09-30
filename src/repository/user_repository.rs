@@ -123,6 +123,19 @@ pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &U
     return Ok(incoming_friend_requests);
 }
 
+pub async fn get_friends(pool: Arc<Pool<Postgres>>, user_id: &Uuid) -> Result<Vec<User>> {
+
+    let friends: Vec<User> = sqlx::query_as(
+        "
+        select u.user_id, u.username from friends f join users u on u.user_id = f.friend_id where f.user_id = $1
+        ")
+        .bind(user_id)
+        .fetch_all(&*pool)
+        .await?;
+
+    return Ok(friends);
+}
+
 pub async fn get_outgoing_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &Uuid) -> Result<Vec<User>> {
 
     let outgoing_friend_requests: Vec<User> = sqlx::query_as(

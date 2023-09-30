@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_user_id_from_username)
             .service(get_incoming_friend_requests)
             .service(get_outgoing_friend_requests)
+            .service(get_friends)
 
     })
     .bind("127.0.0.1:6083")?
@@ -116,6 +117,13 @@ async fn run_tests(pool: web::Data<Pool<Postgres>>) -> impl Responder {
 async fn get_incoming_friend_requests(pool: web::Data<Pool<Postgres>>, user: web::Json<BaseUser>) -> impl Responder {
 
     let users = user_service::get_incoming_friend_requests(pool.into_inner(), &user.into_inner()).await;
+    HttpResponse::Ok().json(users.unwrap())
+}
+
+#[post("/users/get_friends")]
+async fn get_friends(pool: web::Data<Pool<Postgres>>, user: web::Json<BaseUser>) -> impl Responder {
+
+    let users = user_service::get_friends(pool.into_inner(), &user.into_inner()).await;
     HttpResponse::Ok().json(users.unwrap())
 }
 

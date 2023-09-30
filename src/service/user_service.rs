@@ -54,6 +54,12 @@ pub async fn get_incoming_friend_requests(pool: Arc<Pool<Postgres>>, user: &Base
     return Ok(user_id);
 }
 
+pub async fn get_friends(pool: Arc<Pool<Postgres>>, user: &BaseUser) -> Result<Vec<User>> {
+    let user_id = user_repository::get_friends(pool, &user.user_id).await?;
+
+    return Ok(user_id);
+}
+
 pub async fn get_outgoing_friend_requests(pool: Arc<Pool<Postgres>>, user: &BaseUser) -> Result<Vec<User>> {
     let user_id = user_repository::get_outgoing_friend_requests(pool, &user.user_id).await?;
 

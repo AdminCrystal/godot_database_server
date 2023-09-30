@@ -24,6 +24,7 @@ pub struct Game {
     pub create_user_id: Uuid,
     pub game_ip: IpAddr,
     pub game_name: String,
+    pub game_code: String,
     pub is_public: bool,
     pub created_ts: DateTime<Utc>
 }

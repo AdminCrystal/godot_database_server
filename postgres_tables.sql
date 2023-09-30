@@ -20,25 +20,16 @@ create table if not exists friends (
 
 );
 
-create table if not exists outgoing_friend_requests (
-	user_id uuid not null,
-	friend_id uuid not null,
+create table if not exists friend_requests (
+	create_user_id uuid not null,
+	recipient_id uuid not null,
 	friend_request_ts timestamptz default current_timestamp,
 	
-	foreign key (user_id) references users(user_id) on delete cascade,
-	foreign key (friend_id) references users(user_id) on delete cascade,
-	CONSTRAINT unique_outgoing_friend_requests PRIMARY KEY (user_id, friend_id)
+	foreign key (create_user_id) references users(user_id) on delete cascade,
+	foreign key (recipient_id) references users(user_id) on delete cascade,
+	CONSTRAINT unique_friend_requests PRIMARY KEY (create_user_id, recipient_id)
 );
 
-create table if not exists incoming_friend_requests (
-	user_id uuid not null,
-	friend_id uuid not null,
-	friend_request_ts timestamptz default current_timestamp,
-	
-	foreign key (user_id) references users(user_id) on delete cascade,
-	foreign key (friend_id) references users(user_id) on delete cascade,
-	CONSTRAINT unique_incoming_friend_requests PRIMARY KEY (user_id, friend_id)
-);
 
 
 create table if not exists blocked_users (
@@ -59,11 +50,14 @@ create table if not exists games (
 	game_ip cidr not null,
 	is_active bool not null,
 	game_name varchar(25) not null,
+	is_public bool not null,
+	game_code varchar(7) not null,
 	
 	foreign key (create_user_id) references users(user_id) on delete cascade
 
 );
 create index if not exists users_created_games on games(create_user_id);
+create index if not exists game_codes on games(game_code);
 
 create table if not exists game_participants (
 	game_id uuid not null,
