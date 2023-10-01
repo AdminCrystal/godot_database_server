@@ -2,7 +2,7 @@ use std::sync::Arc;
 use actix_web::{HttpResponse, Responder};
 use sqlx::{Pool, Postgres};
 use crate::models::error_message::DevMessage;
-use crate::models::game_structs::{CreateGameRequest, JoinGameRequest, PublicGameRequest};
+use crate::models::game_structs::{BaseGame, CreateGameRequest, JoinGameRequest, PublicGameRequest};
 use crate::repository::game_repository;
 use anyhow::Result;
 
@@ -13,7 +13,10 @@ pub async fn create_game(pool: Arc<Pool<Postgres>>, create_game_request: &Create
 
     txn.commit().await?;
 
-    return Ok(HttpResponse::Ok().body(game_id.to_string()));
+    let base_game = BaseGame {
+        game_id,
+    };
+    return Ok(HttpResponse::Ok().json(base_game));
 }
 
 pub async fn join_game(pool: Arc<Pool<Postgres>>, join_game_request: &JoinGameRequest) -> Result<impl Responder> {

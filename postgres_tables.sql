@@ -72,7 +72,7 @@ create table if not exists games (
 	is_active bool not null,
 	game_name varchar(25) not null,
 	is_public bool not null,
-	game_code varchar(7) not null,
+	game_code varchar(8),
 	
 	foreign key (create_user_id) references users(user_id) on delete cascade
 

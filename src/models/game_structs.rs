@@ -34,3 +34,8 @@ pub struct PublicGameRequest {
     pub create_user_id: Option<Uuid>,
     pub game_name: Option<String>,
 }
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize, FromRow)]
+pub struct BaseGame {
+    pub game_id: Uuid,
+}
