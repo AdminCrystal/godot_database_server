@@ -30,7 +30,28 @@ create table if not exists friend_requests (
 	CONSTRAINT unique_friend_requests PRIMARY KEY (create_user_id, recipient_id)
 );
 
+create table if not exists messages (
+	message_id uuid PRIMARY key not null,	
+	create_user_id uuid not null,
+	message varchar(280) not null,
+	message_create_ts timestamptz default current_timestamp,
+	game_id uuid,
+	
+	foreign key (create_user_id) references users(user_id) on delete cascade
+);
 
+create table if not exists message_recipients (
+	message_id uuid not null,	
+	user_id uuid not null,
+	access_grant_ts timestamptz default current_timestamp,
+	
+	foreign key (user_id) references users(user_id) on delete cascade,
+	foreign key (message_id) references messages(message_id) on delete cascade,
+	CONSTRAINT unique_recipients PRIMARY KEY (message_id, user_id)
+
+);
+
+create index if not exists users_messages on message_recipients(user_id);
 
 create table if not exists blocked_users (
 	user_id uuid not null,

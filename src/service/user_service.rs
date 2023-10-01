@@ -2,11 +2,13 @@ use std::sync::Arc;
 use actix_web::{HttpResponse, Responder};
 use sqlx::{Pool, Postgres};
 
-use crate::repository::user_repository;
+use crate::repository::{message_repository, user_repository};
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use sqlx::postgres::any::AnyConnectionBackend;
 use uuid::Uuid;
 use crate::models::error_message::DevMessage;
+use crate::models::message_structs::{CreateMessage, Message, MessageBetweenUsers};
 use crate::models::user_structs::{BaseUser, FriendRequest, FriendRequestAction, User, UserCreateRequest};
 
 
@@ -14,6 +16,33 @@ pub async fn get_specific_users(pool: Arc<Pool<Postgres>>, user_ids: &Vec<Uuid>)
     let users = user_repository::get_specific_users(pool, &user_ids).await?;
 
     return Ok(users);
+}
+
+pub async fn create_message(pool: Arc<Pool<Postgres>>, create_message: &mut CreateMessage) -> Result<Message> {
+    let mut txn = pool.begin().await?;
+    let message_id = message_repository::create_message(&mut txn, &create_message).await?;
+    create_message.initial_recipients.as_mut().map(|mut item| item.push(create_message.create_user_id.clone()));
+
+    if create_message.initial_recipients.is_some() {
+        message_repository::send_message(&mut txn, &message_id, create_message.initial_recipients.clone().unwrap()).await?;
+    }
+
+    txn.commit().await?;
+
+    let message = Message {
+        create_user_id: create_message.create_user_id.clone(),
+        message: create_message.message.clone(),
+        game_id: create_message.game_id.clone(),
+        message_create_ts: Utc::now(),
+    };
+
+    return Ok(message);
+}
+
+pub async fn get_messages_between_users(pool: Arc<Pool<Postgres>>, message_between_users: &MessageBetweenUsers) -> Result<Vec<Message>> {
+    let messages = message_repository::get_message_between_users(pool, &message_between_users).await?;
+
+    return Ok(messages);
 }
 
 pub async fn friend_request_action(pool: Arc<Pool<Postgres>>, friend_request: &FriendRequestAction) -> Result<DevMessage> {

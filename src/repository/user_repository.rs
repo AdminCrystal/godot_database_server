@@ -148,3 +148,4 @@ pub async fn get_outgoing_friend_requests(pool: Arc<Pool<Postgres>>, user_id: &U
 
     return Ok(outgoing_friend_requests);
 }
+

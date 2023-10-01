@@ -15,6 +15,7 @@ use config::Config;
 use uuid::Uuid;
 use crate::models::game_structs::{CreateGameRequest, JoinGameRequest, PublicGameRequest};
 use crate::models::error_message::DevMessage;
+use crate::models::message_structs::{CreateMessage, MessageBetweenUsers};
 use crate::models::user_structs::{UserCreateRequest, User, FriendRequest, FriendRequestAction, BaseUser};
 use crate::service::{game_service, user_service};
 
@@ -45,12 +46,26 @@ async fn main() -> std::io::Result<()> {
             .service(get_incoming_friend_requests)
             .service(get_outgoing_friend_requests)
             .service(get_friends)
+            .service(create_message)
+            .service(get_messages_between_users)
 
     })
     .bind("127.0.0.1:6083")?
     .run()
     .await
 
+}
+
+#[post("/users/create_message")]
+async fn create_message(pool: web::Data<Pool<Postgres>>, create_message: web::Json<CreateMessage>) -> impl Responder {
+    let users = user_service::create_message(pool.into_inner(), &mut create_message.into_inner()).await.unwrap();
+    HttpResponse::Ok().json(users)
+}
+
+#[post("/users/get_messages_between_users")]
+async fn get_messages_between_users(pool: web::Data<Pool<Postgres>>, message_between_users: web::Json<MessageBetweenUsers>) -> impl Responder {
+    let messages = user_service::get_messages_between_users(pool.into_inner(), &message_between_users.into_inner()).await;
+    HttpResponse::Ok().json(messages.unwrap())
 }
 
 #[post("/users/friend_request_action")]
